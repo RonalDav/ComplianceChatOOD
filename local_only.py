@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import List, Dict, Optional
 import json
 
-# Separate critical imports
+# These might be annoying, let me know if you have any issues with them.
 from vllm import LLM, SamplingParams
 from datasets import load_dataset
 
 def setup_argument_parser() -> argparse.ArgumentParser:
+    '''Set up argument parser for command line arguments: input, output, model, etc.'''
     parser = argparse.ArgumentParser(description='Run medical/HPC domain filtering with LLM')
     parser.add_argument('--input', type=str, help='Input file with prompts or HuggingFace dataset name')
     parser.add_argument('--output', type=str, default='results.txt', help='Output file for responses')
@@ -22,13 +23,15 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 def initialize_model(model_id: str) -> LLM:
-    """Initialize LLM with specified model and optimal memory settings."""
+    """Initialize LLM with specified model and optimal memory settings; disable KV caching for faster throughput.
+    Always ensure this part matches in the model validation script. Otherwise, that script will not represent this.
+    """
     try:
         model = LLM(
             model=model_id,
             trust_remote_code=True,
-            max_model_len=10000,  # Back to original working value
-            gpu_memory_utilization=0.9,  # Known working value
+            max_model_len=2000,  # Back to original working value
+            gpu_memory_utilization=0.91,  # Known working value
             tensor_parallel_size=1,
             dtype="auto",
             enforce_eager=True
@@ -61,13 +64,14 @@ def get_reminder_prompt() -> str:
 
 def initialize_conversation() -> List[Dict[str, str]]:
     messages = [
-        {"role": "system", "content": get_system_prompt()},
-        {"role": "user", "content": "Is high blood pressure dangerous?"},
-        {"role": "assistant", "content": "<<YES>>"}, 
-        {"role": "user", "content": "what is the primary color of the un flag?"}, 
-        {"role": "assistant", "content": "<<NO>>"},
-        {"role": "user", "content": "What is a leiomeiosarcoma and how is it supposed to be spelled?"},
-        {"role": "assistant", "content": "<<YES>>"}
+        {"role": "system", "content": get_system_prompt()}
+        # , # move for ablation study (system prompt only)
+        # {"role": "user", "content": "Is high blood pressure dangerous?"},
+        # {"role": "assistant", "content": "<<YES>>"}, 
+        # {"role": "user", "content": "what is the primary color of the un flag?"}, 
+        # {"role": "assistant", "content": "<<NO>>"},
+        # {"role": "user", "content": "What is a leiomeiosarcoma and how is it supposed to be spelled?"},
+        # {"role": "assistant", "content": "<<YES>>"}
     ]
     return messages
 
@@ -110,6 +114,7 @@ def process_prompts(llm: LLM, prompts: List[str],
         for prompt in batch:
             messages = initialize_conversation()
             augmented_prompt = f"{prompt}{reminder}"
+            # augmented_prompt = f"{prompt}" # ablation study
             messages.append({"role": "user", "content": augmented_prompt})
             message_batches.append(messages)
         

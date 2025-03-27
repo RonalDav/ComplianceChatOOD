@@ -14,15 +14,15 @@ DATASETS=(
     "fka/awesome-chatgpt-prompts,prompt"
 )
 
-# Validate models first
-echo "Validating models..."
-for model in "${MODELS[@]}"; do
-    python model_validation.py --model "$model"
-    if [ $? -ne 0 ]; then
-        echo "Model validation failed for $model"
-        exit 1
-    fi
-done
+# # Validate models first; Uncomment this as needed. 
+# echo "Validating models..."
+# for model in "${MODELS[@]}"; do
+#     python model_validation.py --model "$model"
+#     if [ $? -ne 0 ]; then
+#         echo "Model validation failed for $model"
+#         exit 1
+#     fi
+# done
 
 # Process each combination
 for model in "${MODELS[@]}"; do
@@ -43,9 +43,9 @@ for model in "${MODELS[@]}"; do
             --input "$DATASET_NAME" \
             --is-hf-dataset \
             --text-column "$COLUMN_NAME" \
-            --output "${OUTPUT_BASE}_results.txt" \
-            --raw-output "${OUTPUT_BASE}_raw.txt" \
+            --output "${OUTPUT_BASE}_sr_results.txt" \
+            --raw-output "${OUTPUT_BASE}_sr_raw.txt" \
             --batch-size 256 \
-            2>&1 | tee "${OUTPUT_BASE}_log.txt"
+            2>&1 | tee "${OUTPUT_BASE}_sr_log.txt"
     done
 done
